@@ -106,10 +106,10 @@ fi
 topic "Installing Google Chrome from the $channel channel."
 
 if [ -f $ENV_DIR/CHROME_VERSION ]; then
-  CHROME_VERSION = $(cat $ENV_DIR/CHROME_VERSION)
-  CHROME_PACKAGE = "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-${channel}/google-chrome-${channel}_$CHROME_VERSION-1_amd64.deb"
+  CHROME_VERSION=$(cat $ENV_DIR/CHROME_VERSION)
+  CHROME_PACKAGE="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-${channel}/google-chrome-${channel}_$CHROME_VERSION-1_amd64.deb"
 else
-  CHROME_PACKAGE = "https://dl.google.com/linux/direct/google-chrome-${channel}_current_amd64.deb"
+  CHROME_PACKAGE="https://dl.google.com/linux/direct/google-chrome-${channel}_current_amd64.deb"
 fi
 
 PACKAGES="$PACKAGES $CHROME_PACKAGE"
