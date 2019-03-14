@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir>
+# bin/compile <build-dir> <cache-dir> <env-dir>
 
 # fail fast
 set -e
@@ -105,7 +105,14 @@ fi
 
 topic "Installing Google Chrome from the $channel channel."
 
-PACKAGES="$PACKAGES https://dl.google.com/linux/direct/google-chrome-${channel}_current_amd64.deb"
+if [ -f $ENV_DIR/CHROME_VERSION ]; then
+  CHROME_VERSION = $(cat $ENV_DIR/CHROME_VERSION)
+  CHROME_PACKAGE = "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-${channel}/google-chrome-${channel}_$CHROME_VERSION-1_amd64.deb"
+else
+  CHROME_PACKAGE = "https://dl.google.com/linux/direct/google-chrome-${channel}_current_amd64.deb"
+fi
+
+PACKAGES="$PACKAGES $CHROME_PACKAGE"
 
 APT_CACHE_DIR="$CACHE_DIR/apt/cache"
 APT_STATE_DIR="$CACHE_DIR/apt/state"
