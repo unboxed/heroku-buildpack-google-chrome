@@ -62,11 +62,13 @@ stack=${STACK:-heroku-16}
 # Install correct dependencies according to $STACK
 case "$stack" in
   "cedar-14")
+    APT_FLAGS="--force-yes"
     PACKAGES="libxss1"
     ;;
-  "heroku-16" | "heroku-18")
+  "heroku-16" | "heroku-18" | "heroku-20")
     # the package list is found by using ci:debug then running ldd $GOOGLE_CHROME_BIN | grep not
     # also look here for more packages/notes https://developers.google.com/web/tools/puppeteer/troubleshooting
+    APT_FLAGS="--allow-downgrades --allow-remove-essential --allow-change-held-packages"
     PACKAGES="
       gconf-service
       libappindicator1
@@ -95,7 +97,7 @@ case "$stack" in
     "
     ;;
   *)
-    error "STACK must be 'cedar-14', 'heroku-16', or 'heroku-18' not '$stack.'"
+    error "STACK must be 'cedar-14', 'heroku-16', 'heroku-18' or 'heroku-20', not '$stack'."
 esac
 
 if [ ! -f $CACHE_DIR/PURGED_CACHE_V1 ]; then
@@ -107,15 +109,12 @@ if [ ! -f $CACHE_DIR/PURGED_CACHE_V1 ]; then
 fi
 
 topic "Installing Google Chrome from the $channel channel."
-
 if [ -f $ENV_DIR/CHROME_VERSION ]; then
   CHROME_VERSION=$(cat $ENV_DIR/CHROME_VERSION)
   CHROME_PACKAGE="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-${channel}/google-chrome-${channel}_$CHROME_VERSION-1_amd64.deb"
 else
   CHROME_PACKAGE="https://dl.google.com/linux/direct/google-chrome-${channel}_current_amd64.deb"
 fi
-
-PACKAGES="$PACKAGES $CHROME_PACKAGE"
 
 APT_CACHE_DIR="$CACHE_DIR/apt/cache"
 APT_STATE_DIR="$CACHE_DIR/apt/state"
@@ -128,18 +127,13 @@ APT_OPTIONS="-o debug::nolocking=true -o dir::cache=$APT_CACHE_DIR -o dir::state
 topic "Updating apt caches"
 apt-get $APT_OPTIONS update | indent
 
-for PACKAGE in $PACKAGES; do
-  if [[ $PACKAGE == *deb ]]; then
-    PACKAGE_NAME=$(basename $PACKAGE .deb)
-    PACKAGE_FILE=$APT_CACHE_DIR/archives/$PACKAGE_NAME.deb
+topic "Fetching .debs for Google Chrome dependencies"
+apt-get $APT_OPTIONS -y $APT_FLAGS -d install --reinstall $PACKAGES | indent
 
-    topic "Fetching $PACKAGE"
-    curl -s -L -z $PACKAGE_FILE -o $PACKAGE_FILE $PACKAGE 2>&1 | indent
-  else
-    topic "Fetching .debs for $PACKAGE"
-    apt-get $APT_OPTIONS -y --allow-downgrades --allow-remove-essential --allow-change-held-packages -d install --reinstall $PACKAGE | indent
-  fi
-done
+topic "Fetching .deb for Google Chrome"
+PACKAGE_NAME=$(basename $CHROME_PACKAGE .deb)
+PACKAGE_FILE=$APT_CACHE_DIR/archives/$PACKAGE_NAME.deb
+curl -s -L -z $PACKAGE_FILE -o $PACKAGE_FILE $CHROME_PACKAGE 2>&1 | indent
 
 mkdir -p $BUILD_DIR/.apt
 
